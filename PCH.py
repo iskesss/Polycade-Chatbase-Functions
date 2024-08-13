@@ -126,9 +126,7 @@ class PolycadeChatbaseHelper:
 
         return question_answer_pairs
 
-    def send_qnas_to_google_sheets(
-        self, question_answer_pairs: list[(str, str)]
-    ) -> None:
+    def write_qnas_to_sheets(self, question_answer_pairs: list[(str, str)]) -> None:
         """
         Sends an arbitrary amount of Polycade Q&As to Google Sheets.
 
@@ -141,8 +139,8 @@ class PolycadeChatbaseHelper:
 
         return
 
-    def compile_txt(self) -> None:
-        # compile the Google Sheet Q&A into a .txt document which can be drag+dropped onto the Chatbase dashboard.
+    def download_qnas_from_sheets(self) -> None:
+        # compile the Google Sheet Q&A into a local .txt document which can be drag+dropped onto the Chatbase dashboard.
         filename = f"All entries from Google Sheet at {datetime.now().strftime('%A %b %d, %Y, %I;%M%p')}.txt"
         outfile = open(filename, "w")
 
@@ -152,7 +150,7 @@ class PolycadeChatbaseHelper:
         return
 
 
-ingestor = PolycadeChatbaseHelper()
+pch = PolycadeChatbaseHelper()
 
 # ingestor.fetch_qna_links_from_helpcenter()
 temp = [
@@ -445,7 +443,7 @@ temp = [
         'https://polycade.com/pages/helphq-2#/collection/4548/article/27861"',
     ),
 ]
-output = ingestor.parse_qna_subpages(temp)
+output = pch.parse_qna_subpages(temp)
 
 outfile = open("qa_subpage_output.txt", "w")
 
