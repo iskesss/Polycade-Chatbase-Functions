@@ -14,7 +14,7 @@ def pause() -> None:
     time.sleep(pause_time)
 
 
-class PolycadeIngestor:
+class PolycadeChatbaseHelper:
     # fyi: qna means Q&A
     def __init__(self) -> None:
         return
@@ -152,7 +152,7 @@ class PolycadeIngestor:
         return
 
 
-ingestor = PolycadeIngestor()
+ingestor = PolycadeChatbaseHelper()
 
 # ingestor.fetch_qna_links_from_helpcenter()
 temp = [
