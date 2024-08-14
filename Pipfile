@@ -8,6 +8,7 @@ requests = "*"
 selenium = "*"
 beautifulsoup4 = "*"
 html2text = "*"
+icecream = "*"
 
 [dev-packages]
 
