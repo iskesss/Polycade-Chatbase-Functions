@@ -9,6 +9,7 @@ selenium = "*"
 beautifulsoup4 = "*"
 html2text = "*"
 icecream = "*"
+webdriver-manager = "*"
 
 [dev-packages]
 

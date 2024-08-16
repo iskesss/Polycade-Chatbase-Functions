@@ -8,9 +8,23 @@ import time
 import random
 import html2text
 
+# for docker compatability
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+
+chrome_options = Options()
+# apparently --no-sandbox is dangerous lmao
+chrome_options.add_argument("--no-sandbox")
+# basically just means it's going to run without a screen
+chrome_options.add_argument("--headless")
+# circumvents memory constraints in containerized environments by using /tmp (yes, a disk folder) as memory. slower but more reliable for docker.
+chrome_options.add_argument("--disable-dev-shm-usage")
+
 
 def pause() -> None:
-    pause_time = random.uniform(0.5, 5)
+    pause_time = random.uniform(5, 10)
+    print(f"> Pausing for {round(pause_time,1)}s to prevent ratelimit")
     time.sleep(pause_time)
 
 
@@ -29,7 +43,10 @@ class PolycadeChatbaseHelper:
         Returns:
             list[(str,str)] : A list of pairs, each of which contains... (a_helpcenter_question,the_corresponding_http_link)
         """
-        driver = webdriver.Chrome()
+        # driver = webdriver.Chrome()
+        driver = webdriver.Chrome(  # surely we don't have to reinstall ChromeDriverManager every time?
+            service=Service(ChromeDriverManager().install()), options=chrome_options
+        )
         driver.get("https://polycade.com/pages/helphq-2#/")
 
         print("> Loading Polycade Help Center")
@@ -38,7 +55,7 @@ class PolycadeChatbaseHelper:
             EC.presence_of_element_located((By.CSS_SELECTOR, ".collections-list-item"))
         )
         helpcenter_code = driver.page_source
-        driver.quit()
+        driver.quit()  # TODO: Maybe get rid of this and you won't have to redeclare drivers every time
 
         # Parse the HTML content
         soup = BeautifulSoup(helpcenter_code, "html.parser")
@@ -93,14 +110,18 @@ class PolycadeChatbaseHelper:
         for i in range(0, len(question_link_pairs)):
             pause()  # to prevent ratelimiting
 
-            driver = webdriver.Chrome()
+            # driver = webdriver.Chrome()
+            driver = webdriver.Chrome(  # surely we don't have to reinstall ChromeDriverManager every time?
+                service=Service(ChromeDriverManager().install()), options=chrome_options
+            )
+
             driver.get(question_link_pairs[i][1])  # get the link
             print(f"> Parsing subpage {i+1}/{len(question_link_pairs)}")
             WebDriverWait(driver, 20).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, ".content-wrap"))
             )
             qna_code = driver.page_source
-            driver.quit()
+            driver.quit()  # TODO: Maybe get rid of this and you won't have to redeclare drivers every time
 
             # Parse the HTML content
             soup = BeautifulSoup(qna_code, "html.parser")
@@ -150,306 +171,309 @@ class PolycadeChatbaseHelper:
         return
 
 
+# -_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_-_
+
 pch = PolycadeChatbaseHelper()
 
-# ingestor.fetch_qna_links_from_helpcenter()
-temp = [
-    (
-        "How many games come with Polycade?",
-        'https://polycade.com/pages/helphq-2#/collection/2971/article/11884"',
-    ),
-    (
-        "What is needed to install a Polycade?",
-        'https://polycade.com/pages/helphq-2#/collection/2971/article/11885"',
-    ),
-    (
-        "What are the specs?",
-        'https://polycade.com/pages/helphq-2#/collection/2971/article/11887"',
-    ),
-    (
-        "Does Polycade offer financing?",
-        'https://polycade.com/pages/helphq-2#/collection/2971/article/11888"',
-    ),
-    (
-        "Do you have a coin-op option to charge for play?",
-        'https://polycade.com/pages/helphq-2#/collection/2971/article/11889"',
-    ),
-    (
-        "Can I try a Polycade before I purchase one?",
-        'https://polycade.com/pages/helphq-2#/collection/2971/article/11890"',
-    ),
-    (
-        "How much does the Polycade cost?",
-        'https://polycade.com/pages/helphq-2#/collection/2971/article/11891"',
-    ),
-    (
-        "Compatible Xbox Controllers",
-        'https://polycade.com/pages/helphq-2#/collection/2971/article/12402"',
-    ),
-    (
-        "How to link your Polycade Limiteds and Polycade AGS accounts",
-        'https://polycade.com/pages/helphq-2#/collection/2971/article/23839"',
-    ),
-    (
-        "Disable QA Software",
-        'https://polycade.com/pages/helphq-2#/collection/2971/article/28953"',
-    ),
-    (
-        "What is Polycade AGS",
-        'https://polycade.com/pages/helphq-2#/collection/2972/article/11893"',
-    ),
-    (
-        "Polycade AGS Installation",
-        'https://polycade.com/pages/helphq-2#/collection/2972/article/11894"',
-    ),
-    (
-        "Making AGS your default interface",
-        'https://polycade.com/pages/helphq-2#/collection/2972/article/11895"',
-    ),
-    (
-        "Updating Steam Settings",
-        'https://polycade.com/pages/helphq-2#/collection/2972/article/11896"',
-    ),
-    (
-        "Adding ROMs",
-        'https://polycade.com/pages/helphq-2#/collection/2972/article/11897"',
-    ),
-    (
-        "Adding custom images for games",
-        'https://polycade.com/pages/helphq-2#/collection/2972/article/11898"',
-    ),
-    (
-        "Adding games from Steam",
-        'https://polycade.com/pages/helphq-2#/collection/2972/article/11899"',
-    ),
-    (
-        "Removing games from Polycade AGS",
-        'https://polycade.com/pages/helphq-2#/collection/2972/article/11900"',
-    ),
-    (
-        "What kind of internet support is required?",
-        'https://polycade.com/pages/helphq-2#/collection/2972/article/11901"',
-    ),
-    (
-        "Adding games from GOG",
-        'https://polycade.com/pages/helphq-2#/collection/2972/article/11902"',
-    ),
-    (
-        "Purchasing games from Polycade AGS Store",
-        'https://polycade.com/pages/helphq-2#/collection/2972/article/12385"',
-    ),
-    (
-        "How do I create a Polycade account?",
-        'https://polycade.com/pages/helphq-2#/collection/2972/article/12650"',
-    ),
-    (
-        "Redeeming Gift Cards or Store Credit",
-        'https://polycade.com/pages/helphq-2#/collection/2972/article/19223"',
-    ),
-    (
-        "Supported Platforms",
-        'https://polycade.com/pages/helphq-2#/collection/2973/article/11904"',
-    ),
-    (
-        "What are ROMs?",
-        'https://polycade.com/pages/helphq-2#/collection/2973/article/11905"',
-    ),
-    (
-        "What's an Emulator?",
-        'https://polycade.com/pages/helphq-2#/collection/2973/article/11906"',
-    ),
-    (
-        "Can I play any game I want?",
-        'https://polycade.com/pages/helphq-2#/collection/2973/article/11909"',
-    ),
-    (
-        "Does Polycade just play old games?",
-        'https://polycade.com/pages/helphq-2#/collection/2973/article/11910"',
-    ),
-    (
-        "Adding games",
-        'https://polycade.com/pages/helphq-2#/collection/2973/article/11911"',
-    ),
-    (
-        "How many games can it hold?",
-        'https://polycade.com/pages/helphq-2#/collection/2973/article/11912"',
-    ),
-    (
-        "Should I get antivirus software?",
-        'https://polycade.com/pages/helphq-2#/collection/2973/article/11913"',
-    ),
-    (
-        "Compatible Steam Games",
-        'https://polycade.com/pages/helphq-2#/collection/2973/article/12403"',
-    ),
-    (
-        "Adding Additional Emulators",
-        'https://polycade.com/pages/helphq-2#/collection/2973/article/26344"',
-    ),
-    (
-        "Removing games",
-        'https://polycade.com/pages/helphq-2#/collection/2973/article/28144"',
-    ),
-    (
-        "Arcade (MAME) ROM errors",
-        'https://polycade.com/pages/helphq-2#/collection/2973/article/28952"',
-    ),
-    (
-        "Steam Tab Issue",
-        'https://polycade.com/pages/helphq-2#/collection/2974/article/11918"',
-    ),
-    (
-        "Steam stuck on blue screen",
-        'https://polycade.com/pages/helphq-2#/collection/2974/article/11919"',
-    ),
-    (
-        "Redeeming Steam Keys",
-        'https://polycade.com/pages/helphq-2#/collection/2974/article/11920"',
-    ),
-    (
-        "How to fullscreen a game",
-        'https://polycade.com/pages/helphq-2#/collection/2974/article/11921"',
-    ),
-    (
-        "How do I find games on Steam that will work best on Polycade?",
-        'https://polycade.com/pages/helphq-2#/collection/2974/article/11922"',
-    ),
-    (
-        "Unable to log in, even with scroll function",
-        'https://polycade.com/pages/helphq-2#/collection/2974/article/11923"',
-    ),
-    (
-        "Game list won't scroll",
-        'https://polycade.com/pages/helphq-2#/collection/2974/article/11924"',
-    ),
-    (
-        "How to uninstall Steam games",
-        'https://polycade.com/pages/helphq-2#/collection/2974/article/17465"',
-    ),
-    (
-        "Testing joysticks &amp; buttons",
-        'https://polycade.com/pages/helphq-2#/collection/2975/article/11925"',
-    ),
-    (
-        "Controller not working",
-        'https://polycade.com/pages/helphq-2#/collection/2975/article/11926"',
-    ),
-    (
-        "What do all the buttons do?",
-        'https://polycade.com/pages/helphq-2#/collection/2975/article/11927"',
-    ),
-    (
-        "Keyboard shortcuts",
-        'https://polycade.com/pages/helphq-2#/collection/2975/article/11928"',
-    ),
-    (
-        "Gameplay controls",
-        'https://polycade.com/pages/helphq-2#/collection/2975/article/11929"',
-    ),
-    (
-        "How to pair your controller",
-        'https://polycade.com/pages/helphq-2#/collection/2975/article/11930"',
-    ),
-    (
-        "Recommended controllers",
-        'https://polycade.com/pages/helphq-2#/collection/2975/article/11931"',
-    ),
-    (
-        "How to Use a Wireless Xbox 360 Controller on a PC",
-        'https://polycade.com/pages/helphq-2#/collection/2975/article/12401"',
-    ),
-    (
-        "Using AGS without a Controller",
-        'https://polycade.com/pages/helphq-2#/collection/2975/article/12437"',
-    ),
-    (
-        'Removing the "Control Panel"',
-        'https://polycade.com/pages/helphq-2#/collection/2975/article/13006"',
-    ),
-    (
-        "Light Guns",
-        'https://polycade.com/pages/helphq-2#/collection/2975/article/26345"',
-    ),
-    (
-        "Mounting instructions",
-        'https://polycade.com/pages/helphq-2#/collection/2976/article/11932"',
-    ),
-    (
-        "What do I need to mount the Polycade?",
-        'https://polycade.com/pages/helphq-2#/collection/2976/article/11933"',
-    ),
-    (
-        "Does Polycade offer installation?",
-        'https://polycade.com/pages/helphq-2#/collection/2976/article/11934"',
-    ),
-    (
-        "Is there a way to use a Polycade without a wall?",
-        'https://polycade.com/pages/helphq-2#/collection/2976/article/11935"',
-    ),
-    (
-        "LED Backlights Setup",
-        'https://polycade.com/pages/helphq-2#/collection/2976/article/28956"',
-    ),
-    (
-        "Can I customize the look of my Polycade?",
-        'https://polycade.com/pages/helphq-2#/collection/2979/article/11944"',
-    ),
-    (
-        "Installing a dimmer",
-        'https://polycade.com/pages/helphq-2#/collection/2979/article/11946"',
-    ),
-    (
-        "Disabling Startup Programs",
-        'https://polycade.com/pages/helphq-2#/collection/4100/article/12400"',
-    ),
-    (
-        "Fully resetting and re-installing Windows",
-        'https://polycade.com/pages/helphq-2#/collection/4100/article/18726"',
-    ),
-    (
-        "How do I connect to Wi-Fi?",
-        'https://polycade.com/pages/helphq-2#/collection/4100/article/19222"',
-    ),
-    (
-        "New Polycade machine setup instructions",
-        'https://polycade.com/pages/helphq-2#/collection/4100/article/20404"',
-    ),
-    (
-        "Disable Windows Sign-in Button",
-        'https://polycade.com/pages/helphq-2#/collection/4100/article/28959"',
-    ),
-    (
-        "My sound isn't working",
-        'https://polycade.com/pages/helphq-2#/collection/4548/article/17529"',
-    ),
-    (
-        "Polycade Won't Power On",
-        'https://polycade.com/pages/helphq-2#/collection/4548/article/21253"',
-    ),
-    (
-        "Black screen after powering on",
-        'https://polycade.com/pages/helphq-2#/collection/4548/article/21254"',
-    ),
-    (
-        "How to open your Polycade",
-        'https://polycade.com/pages/helphq-2#/collection/4548/article/21255"',
-    ),
-    (
-        "Screen does not turn on",
-        'https://polycade.com/pages/helphq-2#/collection/4548/article/21257"',
-    ),
-    (
-        "Updating Controller Firmware",
-        'https://polycade.com/pages/helphq-2#/collection/4548/article/27861"',
-    ),
-]
-output = pch.parse_qna_subpages(temp)
+pch.fetch_qna_links_from_helpcenter()
 
-outfile = open("qa_subpage_output.txt", "w")
+# temp = [
+#     (
+#         "How many games come with Polycade?",
+#         'https://polycade.com/pages/helphq-2#/collection/2971/article/11884"',
+#     ),
+#     (
+#         "What is needed to install a Polycade?",
+#         'https://polycade.com/pages/helphq-2#/collection/2971/article/11885"',
+#     ),
+#     (
+#         "What are the specs?",
+#         'https://polycade.com/pages/helphq-2#/collection/2971/article/11887"',
+#     ),
+#     (
+#         "Does Polycade offer financing?",
+#         'https://polycade.com/pages/helphq-2#/collection/2971/article/11888"',
+#     ),
+#     (
+#         "Do you have a coin-op option to charge for play?",
+#         'https://polycade.com/pages/helphq-2#/collection/2971/article/11889"',
+#     ),
+#     (
+#         "Can I try a Polycade before I purchase one?",
+#         'https://polycade.com/pages/helphq-2#/collection/2971/article/11890"',
+#     ),
+#     (
+#         "How much does the Polycade cost?",
+#         'https://polycade.com/pages/helphq-2#/collection/2971/article/11891"',
+#     ),
+#     (
+#         "Compatible Xbox Controllers",
+#         'https://polycade.com/pages/helphq-2#/collection/2971/article/12402"',
+#     ),
+#     (
+#         "How to link your Polycade Limiteds and Polycade AGS accounts",
+#         'https://polycade.com/pages/helphq-2#/collection/2971/article/23839"',
+#     ),
+#     (
+#         "Disable QA Software",
+#         'https://polycade.com/pages/helphq-2#/collection/2971/article/28953"',
+#     ),
+#     (
+#         "What is Polycade AGS",
+#         'https://polycade.com/pages/helphq-2#/collection/2972/article/11893"',
+#     ),
+#     (
+#         "Polycade AGS Installation",
+#         'https://polycade.com/pages/helphq-2#/collection/2972/article/11894"',
+#     ),
+#     (
+#         "Making AGS your default interface",
+#         'https://polycade.com/pages/helphq-2#/collection/2972/article/11895"',
+#     ),
+#     (
+#         "Updating Steam Settings",
+#         'https://polycade.com/pages/helphq-2#/collection/2972/article/11896"',
+#     ),
+#     (
+#         "Adding ROMs",
+#         'https://polycade.com/pages/helphq-2#/collection/2972/article/11897"',
+#     ),
+#     (
+#         "Adding custom images for games",
+#         'https://polycade.com/pages/helphq-2#/collection/2972/article/11898"',
+#     ),
+#     (
+#         "Adding games from Steam",
+#         'https://polycade.com/pages/helphq-2#/collection/2972/article/11899"',
+#     ),
+#     (
+#         "Removing games from Polycade AGS",
+#         'https://polycade.com/pages/helphq-2#/collection/2972/article/11900"',
+#     ),
+#     (
+#         "What kind of internet support is required?",
+#         'https://polycade.com/pages/helphq-2#/collection/2972/article/11901"',
+#     ),
+#     (
+#         "Adding games from GOG",
+#         'https://polycade.com/pages/helphq-2#/collection/2972/article/11902"',
+#     ),
+#     (
+#         "Purchasing games from Polycade AGS Store",
+#         'https://polycade.com/pages/helphq-2#/collection/2972/article/12385"',
+#     ),
+#     (
+#         "How do I create a Polycade account?",
+#         'https://polycade.com/pages/helphq-2#/collection/2972/article/12650"',
+#     ),
+#     (
+#         "Redeeming Gift Cards or Store Credit",
+#         'https://polycade.com/pages/helphq-2#/collection/2972/article/19223"',
+#     ),
+#     (
+#         "Supported Platforms",
+#         'https://polycade.com/pages/helphq-2#/collection/2973/article/11904"',
+#     ),
+#     (
+#         "What are ROMs?",
+#         'https://polycade.com/pages/helphq-2#/collection/2973/article/11905"',
+#     ),
+#     (
+#         "What's an Emulator?",
+#         'https://polycade.com/pages/helphq-2#/collection/2973/article/11906"',
+#     ),
+#     (
+#         "Can I play any game I want?",
+#         'https://polycade.com/pages/helphq-2#/collection/2973/article/11909"',
+#     ),
+#     (
+#         "Does Polycade just play old games?",
+#         'https://polycade.com/pages/helphq-2#/collection/2973/article/11910"',
+#     ),
+#     (
+#         "Adding games",
+#         'https://polycade.com/pages/helphq-2#/collection/2973/article/11911"',
+#     ),
+#     (
+#         "How many games can it hold?",
+#         'https://polycade.com/pages/helphq-2#/collection/2973/article/11912"',
+#     ),
+#     (
+#         "Should I get antivirus software?",
+#         'https://polycade.com/pages/helphq-2#/collection/2973/article/11913"',
+#     ),
+#     (
+#         "Compatible Steam Games",
+#         'https://polycade.com/pages/helphq-2#/collection/2973/article/12403"',
+#     ),
+#     (
+#         "Adding Additional Emulators",
+#         'https://polycade.com/pages/helphq-2#/collection/2973/article/26344"',
+#     ),
+#     (
+#         "Removing games",
+#         'https://polycade.com/pages/helphq-2#/collection/2973/article/28144"',
+#     ),
+#     (
+#         "Arcade (MAME) ROM errors",
+#         'https://polycade.com/pages/helphq-2#/collection/2973/article/28952"',
+#     ),
+#     (
+#         "Steam Tab Issue",
+#         'https://polycade.com/pages/helphq-2#/collection/2974/article/11918"',
+#     ),
+#     (
+#         "Steam stuck on blue screen",
+#         'https://polycade.com/pages/helphq-2#/collection/2974/article/11919"',
+#     ),
+#     (
+#         "Redeeming Steam Keys",
+#         'https://polycade.com/pages/helphq-2#/collection/2974/article/11920"',
+#     ),
+#     (
+#         "How to fullscreen a game",
+#         'https://polycade.com/pages/helphq-2#/collection/2974/article/11921"',
+#     ),
+#     (
+#         "How do I find games on Steam that will work best on Polycade?",
+#         'https://polycade.com/pages/helphq-2#/collection/2974/article/11922"',
+#     ),
+#     (
+#         "Unable to log in, even with scroll function",
+#         'https://polycade.com/pages/helphq-2#/collection/2974/article/11923"',
+#     ),
+#     (
+#         "Game list won't scroll",
+#         'https://polycade.com/pages/helphq-2#/collection/2974/article/11924"',
+#     ),
+#     (
+#         "How to uninstall Steam games",
+#         'https://polycade.com/pages/helphq-2#/collection/2974/article/17465"',
+#     ),
+#     (
+#         "Testing joysticks &amp; buttons",
+#         'https://polycade.com/pages/helphq-2#/collection/2975/article/11925"',
+#     ),
+#     (
+#         "Controller not working",
+#         'https://polycade.com/pages/helphq-2#/collection/2975/article/11926"',
+#     ),
+#     (
+#         "What do all the buttons do?",
+#         'https://polycade.com/pages/helphq-2#/collection/2975/article/11927"',
+#     ),
+#     (
+#         "Keyboard shortcuts",
+#         'https://polycade.com/pages/helphq-2#/collection/2975/article/11928"',
+#     ),
+#     (
+#         "Gameplay controls",
+#         'https://polycade.com/pages/helphq-2#/collection/2975/article/11929"',
+#     ),
+#     (
+#         "How to pair your controller",
+#         'https://polycade.com/pages/helphq-2#/collection/2975/article/11930"',
+#     ),
+#     (
+#         "Recommended controllers",
+#         'https://polycade.com/pages/helphq-2#/collection/2975/article/11931"',
+#     ),
+#     (
+#         "How to Use a Wireless Xbox 360 Controller on a PC",
+#         'https://polycade.com/pages/helphq-2#/collection/2975/article/12401"',
+#     ),
+#     (
+#         "Using AGS without a Controller",
+#         'https://polycade.com/pages/helphq-2#/collection/2975/article/12437"',
+#     ),
+#     (
+#         'Removing the "Control Panel"',
+#         'https://polycade.com/pages/helphq-2#/collection/2975/article/13006"',
+#     ),
+#     (
+#         "Light Guns",
+#         'https://polycade.com/pages/helphq-2#/collection/2975/article/26345"',
+#     ),
+#     (
+#         "Mounting instructions",
+#         'https://polycade.com/pages/helphq-2#/collection/2976/article/11932"',
+#     ),
+#     (
+#         "What do I need to mount the Polycade?",
+#         'https://polycade.com/pages/helphq-2#/collection/2976/article/11933"',
+#     ),
+#     (
+#         "Does Polycade offer installation?",
+#         'https://polycade.com/pages/helphq-2#/collection/2976/article/11934"',
+#     ),
+#     (
+#         "Is there a way to use a Polycade without a wall?",
+#         'https://polycade.com/pages/helphq-2#/collection/2976/article/11935"',
+#     ),
+#     (
+#         "LED Backlights Setup",
+#         'https://polycade.com/pages/helphq-2#/collection/2976/article/28956"',
+#     ),
+#     (
+#         "Can I customize the look of my Polycade?",
+#         'https://polycade.com/pages/helphq-2#/collection/2979/article/11944"',
+#     ),
+#     (
+#         "Installing a dimmer",
+#         'https://polycade.com/pages/helphq-2#/collection/2979/article/11946"',
+#     ),
+#     (
+#         "Disabling Startup Programs",
+#         'https://polycade.com/pages/helphq-2#/collection/4100/article/12400"',
+#     ),
+#     (
+#         "Fully resetting and re-installing Windows",
+#         'https://polycade.com/pages/helphq-2#/collection/4100/article/18726"',
+#     ),
+#     (
+#         "How do I connect to Wi-Fi?",
+#         'https://polycade.com/pages/helphq-2#/collection/4100/article/19222"',
+#     ),
+#     (
+#         "New Polycade machine setup instructions",
+#         'https://polycade.com/pages/helphq-2#/collection/4100/article/20404"',
+#     ),
+#     (
+#         "Disable Windows Sign-in Button",
+#         'https://polycade.com/pages/helphq-2#/collection/4100/article/28959"',
+#     ),
+#     (
+#         "My sound isn't working",
+#         'https://polycade.com/pages/helphq-2#/collection/4548/article/17529"',
+#     ),
+#     (
+#         "Polycade Won't Power On",
+#         'https://polycade.com/pages/helphq-2#/collection/4548/article/21253"',
+#     ),
+#     (
+#         "Black screen after powering on",
+#         'https://polycade.com/pages/helphq-2#/collection/4548/article/21254"',
+#     ),
+#     (
+#         "How to open your Polycade",
+#         'https://polycade.com/pages/helphq-2#/collection/4548/article/21255"',
+#     ),
+#     (
+#         "Screen does not turn on",
+#         'https://polycade.com/pages/helphq-2#/collection/4548/article/21257"',
+#     ),
+#     (
+#         "Updating Controller Firmware",
+#         'https://polycade.com/pages/helphq-2#/collection/4548/article/27861"',
+#     ),
+# ]
+# output = pch.parse_qna_subpages(temp)
 
-for i in range(0, len(output)):
-    outfile.write("-------------------------------\n")
-    outfile.write(f"{i+1}. {output[i][0]}\n")
-    outfile.write("-------------------------------\n")
-    outfile.write(output[i][1])
-outfile.close()
+# outfile = open("qna_output.txt", "w")
+
+# for i in range(0, len(output)):
+#     outfile.write("-------------------------------\n")
+#     outfile.write(f"{i+1}. {output[i][0]}\n")
+#     outfile.write("-------------------------------\n")
+#     outfile.write(output[i][1])
+# outfile.close()
