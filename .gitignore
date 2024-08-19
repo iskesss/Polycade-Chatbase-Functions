@@ -1,2 +1,4 @@
 .DS_Store
 credentials.json
+__pycache__/
+All entries from Google Sheet at*
