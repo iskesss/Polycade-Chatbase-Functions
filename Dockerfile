@@ -26,11 +26,14 @@ RUN pipenv install --system --deploy
 
 CMD [ "python", "./main.py" ]
 
-# SAVE TO FILES
+# BUILD IMAGE ON M1 MAC
+# docker build -t pch --platform linux/amd64 .
+
+# SAVE IMAGE TO FILES
 #docker save -o pch_image.tar pch:latest
 
-# LOAD FROM FILES
+# LOAD IMAGE FROM FILES
 #docker load -i pch_image.tar
 
-# RUN ON HOST
+# RUN CONTAINER ON HOST
 # docker run -v ~/Downloads:/downloads -it pch_image
