@@ -29,11 +29,11 @@ CMD [ "python", "./main.py" ]
 # BUILD IMAGE ON M1 MAC
 # docker build -t pch --platform linux/amd64 .
 
+# RUN CONTAINER ON HOST
+# docker run -v ~/Downloads:/downloads -it pch
+
 # SAVE IMAGE TO FILES
 #docker save -o pch_image.tar pch:latest
 
 # LOAD IMAGE FROM FILES
-#docker load -i pch_image.tar
-
-# RUN CONTAINER ON HOST
-# docker run -v ~/Downloads:/downloads -it pch_image
+#docker load -i pch.tar
