@@ -29,9 +29,16 @@ chrome_options.add_argument("--headless")
 chrome_options.add_argument("--disable-dev-shm-usage")
 
 
-def pause() -> None:
-    pause_time = random.uniform(5, 10)
-    print(f"> Pausing for {round(pause_time,1)}s to prevent ratelimit")
+def _pause(print_with_linebreak: bool = True) -> None:
+    pause_time = random.uniform(0, 4)
+    if print_with_linebreak:
+        print(f"  |--> Pausing for {round(pause_time,1)}s to prevent ratelimit")
+    else:
+        print(
+            f"  |--> Pausing for {round(pause_time,1)}s to prevent ratelimit...",
+            end=" ",
+            flush=True,
+        )
     time.sleep(pause_time)
 
 
@@ -40,7 +47,7 @@ class PolycadeChatbaseHelper:
     def __init__(self) -> None:
         return
 
-    def get_qna_spreadsheet(self) -> Spreadsheet:
+    def _get_qna_spreadsheet(self) -> Spreadsheet:
         SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
         POLYCADE_QNA_SHEET_ID = "1nVZM28NEdcQjGw_qwnNxMeJ16kOGh1xuseCBQlOdgIY"
 
@@ -49,7 +56,7 @@ class PolycadeChatbaseHelper:
 
         return client.open_by_key(POLYCADE_QNA_SHEET_ID)
 
-    def fetch_helpcenter_subpage_links(self) -> list[(str, str)]:
+    def _fetch_helpcenter_subpage_links(self) -> list[(str, str)]:
         """
         Scrapes the main Polycade Help Center webpage and retrieves a link to each subpage containing a Q&A.
 
@@ -65,7 +72,7 @@ class PolycadeChatbaseHelper:
         )
         driver.get("https://polycade.com/pages/helphq-2#/")
 
-        print("> Loading Polycade Help Center")
+        print("  |--> Loading Polycade Help Center")
 
         WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, ".collections-list-item"))
@@ -81,7 +88,7 @@ class PolycadeChatbaseHelper:
             "li", class_="collections-list-item"
         )
 
-        print(f"> {len(question_link_code_snippets)} Q&A links found:")
+        print(f"  |--> {len(question_link_code_snippets)} Q&A links found:")
 
         question_link_pairs = []
 
@@ -100,14 +107,14 @@ class PolycadeChatbaseHelper:
                 question += trimmed_snippet[c]
                 c += 1
 
-            print(f"\t{i+1}. {question}")
+            print(f"  |\t {i+1}. {question}")
 
             question_link_pairs.append(
                 (question, "https://polycade.com/pages/helphq-2" + link)
             )
         return question_link_pairs
 
-    def parse_qna_subpages(
+    def _parse_qna_subpages(
         self, question_link_pairs: list[(str, str)]
     ) -> list[(str, str)]:
         """
@@ -122,18 +129,20 @@ class PolycadeChatbaseHelper:
 
         # one by one we'll overwrite the links with answers
         question_answer_pairs = question_link_pairs
-        print("> This is gonna take a while.")
 
         for i in range(0, len(question_link_pairs)):
-            pause()  # to prevent ratelimiting
+            _pause(print_with_linebreak=False)  # to prevent ratelimiting
+            print(
+                f"parsing subpage {i+1}/{len(question_link_pairs)}...",
+                end=" ",
+                flush=True,
+            )
 
             # driver = webdriver.Chrome()
             driver = webdriver.Chrome(  # surely we don't have to reinstall ChromeDriverManager every time?
                 service=Service(ChromeDriverManager().install()), options=chrome_options
             )
-
             driver.get(question_link_pairs[i][1])  # get the link
-            print(f"> Parsing subpage {i+1}/{len(question_link_pairs)}")
             WebDriverWait(driver, 20).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, ".content-wrap"))
             )
@@ -161,10 +170,11 @@ class PolycadeChatbaseHelper:
 
             # replace the current question's link with it's answer (in Markdown format)
             question_answer_pairs[i] = (question_answer_pairs[i][0], answer)
+            print("done!")
 
         return question_answer_pairs
 
-    def write_qnas_to_sheets(self, question_answer_pairs: list[(str, str)]) -> None:
+    def _write_qnas_to_sheets(self, question_answer_pairs: list[(str, str)]) -> None:
         """
         Sends an arbitrary amount of Polycade Q&As to Google Sheets.
 
@@ -175,14 +185,14 @@ class PolycadeChatbaseHelper:
             None
         """
 
-        spreadsheet = self.get_qna_spreadsheet()
+        spreadsheet = self._get_qna_spreadsheet()
         worksheet = spreadsheet.worksheet("Scraped from Helpcenter")
 
         num_rows_to_update = (
             len(question_answer_pairs) + 1
         )  # +1 at the bottom because we're reserving a row for the header
 
-        print(f"> Preparing to update {num_rows_to_update} rows")
+        print(f"  |--> Preparing to update {num_rows_to_update} rows")
 
         # +1 at the bottom because we're reserving a row for the header
         cells = worksheet.range(name=f"A1:B{num_rows_to_update}")
@@ -200,8 +210,8 @@ class PolycadeChatbaseHelper:
             cells[i].value = qaqaqa[i - 2]
 
         response = worksheet.update_cells(cell_list=cells)
-        print(f"> Google Sheets returned {response}")
-        print(f"> Inserting current timestamp")
+        print(f"  |--> Google Sheets returned {response}")
+        print(f"  |--> Inserting current timestamp")
         worksheet.update_acell(
             label="H2",
             value=f"Last Updated at {datetime.now().strftime('%A %b %d, %Y, %I:%M%p')}",  # TODO: Add the timezone or something. It's always 5 o'clock somewhere!
@@ -210,20 +220,20 @@ class PolycadeChatbaseHelper:
         return
 
     def update_sheets_with_qnas(self) -> None:
-        print("> Fetching links to Q&A subpages from Polycade Helpcenter")
-        question_link_pairs = self.fetch_helpcenter_subpage_links()
+        print("  |--> Fetching links to Q&A subpages from Polycade Helpcenter")
+        question_link_pairs = self._fetch_helpcenter_subpage_links()
 
         print(
-            f"> Parsing all Q&A subpages to which links were found ({len(question_link_pairs)} total)"
+            f"  |--> Parsing all Q&A subpages to which links were found ({len(question_link_pairs)} total). This is gonna take a while."
         )
-        question_answer_pairs = self.parse_qna_subpages(
+        question_answer_pairs = self._parse_qna_subpages(
             question_link_pairs=question_link_pairs
         )  # this takes a loooong time
 
-        print(f"> Writing {len(question_link_pairs)} Q&As to Google Sheets")
-        self.write_qnas_to_sheets(question_answer_pairs=question_answer_pairs)
+        print(f"  |--> Writing {len(question_link_pairs)} Q&As to Google Sheets")
+        self._write_qnas_to_sheets(question_answer_pairs=question_answer_pairs)
 
-        print("> Sheets have been updated!")
+        print("  |--> Sheets have been updated!")
         return
 
     def download_qnas_from_sheets(self) -> None:
@@ -236,7 +246,7 @@ class PolycadeChatbaseHelper:
         Returns:
             None
         """
-        spreadsheet = self.get_qna_spreadsheet()
+        spreadsheet = self._get_qna_spreadsheet()
         sheets_to_scrape = []
         sheets_to_scrape.append(spreadsheet.worksheet("Scraped from Helpcenter"))
         sheets_to_scrape.append(spreadsheet.worksheet("Manual Entries"))
@@ -250,7 +260,7 @@ class PolycadeChatbaseHelper:
             window_top = 2
             window_bottom = 100
             num_qnas_found = 0
-            print(f"> Scraping '{sheet.title}' sheet...", end=" ")
+            print(f"  |--> Scraping '{sheet.title}' sheet...", end=" ")
             # we'll scan down through the worksheet 100 cells at a time, until we encounter empty cells, at which point we'll have read the whole worksheet
             while not whole_worksheet_read:
                 cell_batch = sheet.range(name=f"A{window_top}:B{window_bottom}")
@@ -263,7 +273,7 @@ class PolycadeChatbaseHelper:
                         num_qnas_found += 0.5
                         c += 1
                 else:  # cell_batch is completely full of qnas, so just add the entire thing to all_qaqaqa and we'll shift the window down (to go find more qnas)
-                    print(f"clearly we need more than {window_bottom}")
+                    # ic(f"clearly we need more than {window_bottom}")
                     for cell in cell_batch:
                         all_qaqaqa.append(cell.value)
                         num_qnas_found += 0.5
@@ -274,14 +284,14 @@ class PolycadeChatbaseHelper:
             assert len(all_qaqaqa) % 2 == 0
             print(f"found {round(num_qnas_found)} Q&As")
 
-        print(f"> Concluded with {round(len(all_qaqaqa) / 2)} questions total")
+        print(f"  |--> Concluded with {round(len(all_qaqaqa) / 2)} questions total")
 
         is_containerized = os.environ.get(
             key="AM_I_IN_A_DOCKER_CONTAINER", default=False
         )
         if is_containerized:
             print(
-                "> Docker environment detected. Generating .txt file in /downloads...",
+                "  |--> Docker environment detected. Generating .txt file in /downloads...",
                 end=" ",
             )
             output_dir = "/downloads"
@@ -292,7 +302,7 @@ class PolycadeChatbaseHelper:
             )
         else:
             print(
-                f"> Docker Environment not detected. Generating .txt file in CWD...",
+                f"  |--> Docker Environment not detected. Generating .txt file in CWD...",
                 end=" ",
             )
             filename = f"All entries from Google Sheet at {datetime.now().strftime('%A %b %d, %Y, %I;%M%p')}.txt"
