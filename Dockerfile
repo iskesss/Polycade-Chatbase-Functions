@@ -26,4 +26,11 @@ RUN pipenv install --system --deploy
 
 CMD [ "python", "./main.py" ]
 
-# docker run -v ~/Downloads:/downloads -it pch
+# SAVE TO FILES
+#docker save -o pch_image.tar pch:latest
+
+# LOAD FROM FILES
+#docker load -i pch_image.tar
+
+# RUN ON HOST
+# docker run -v ~/Downloads:/downloads -it pch_image
