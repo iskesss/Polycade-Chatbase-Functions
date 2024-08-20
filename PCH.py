@@ -66,19 +66,18 @@ class PolycadeChatbaseHelper:
         Returns:
             list[(str,str)] : A list of pairs, each of which contains... (a_helpcenter_question,the_corresponding_http_link)
         """
-        # driver = webdriver.Chrome()
+        print("  |--> Loading Polycade Help Center...", end=" ", flush=True)
         driver = webdriver.Chrome(  # surely we don't have to reinstall ChromeDriverManager every time?
             service=Service(ChromeDriverManager().install()), options=chrome_options
         )
         driver.get("https://polycade.com/pages/helphq-2#/")
-
-        print("  |--> Loading Polycade Help Center")
 
         WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.CSS_SELECTOR, ".collections-list-item"))
         )
         helpcenter_code = driver.page_source
         driver.quit()  # TODO: Maybe get rid of this and you won't have to redeclare drivers every time
+        print("done!")
 
         # Parse the HTML content
         soup = BeautifulSoup(helpcenter_code, "html.parser")
@@ -107,7 +106,7 @@ class PolycadeChatbaseHelper:
                 question += trimmed_snippet[c]
                 c += 1
 
-            print(f"  |\t {i+1}. {question}")
+            print(f"  |\t  {i+1}. {question}")
 
             question_link_pairs.append(
                 (question, "https://polycade.com/pages/helphq-2" + link)
@@ -138,7 +137,6 @@ class PolycadeChatbaseHelper:
                 flush=True,
             )
 
-            # driver = webdriver.Chrome()
             driver = webdriver.Chrome(  # surely we don't have to reinstall ChromeDriverManager every time?
                 service=Service(ChromeDriverManager().install()), options=chrome_options
             )
@@ -192,7 +190,7 @@ class PolycadeChatbaseHelper:
             len(question_answer_pairs) + 1
         )  # +1 at the bottom because we're reserving a row for the header
 
-        print(f"  |--> Preparing to update {num_rows_to_update} rows")
+        print(f"  |--> Updating {num_rows_to_update} rows...", end=" ")
 
         # +1 at the bottom because we're reserving a row for the header
         cells = worksheet.range(name=f"A1:B{num_rows_to_update}")
@@ -210,30 +208,32 @@ class PolycadeChatbaseHelper:
             cells[i].value = qaqaqa[i - 2]
 
         response = worksheet.update_cells(cell_list=cells)
-        print(f"  |--> Google Sheets returned {response}")
-        print(f"  |--> Inserting current timestamp")
+        print(f"done!")
+
+        print(f"  |--> Inserting current timestamp...", end=" ")
         worksheet.update_acell(
             label="H2",
             value=f"Last Updated at {datetime.now().strftime('%A %b %d, %Y, %I:%M%p')}",  # TODO: Add the timezone or something. It's always 5 o'clock somewhere!
         )
+        print(f"done!")
 
         return
 
     def update_sheets_with_qnas(self) -> None:
-        print("  |--> Fetching links to Q&A subpages from Polycade Helpcenter")
+        print("  |> Fetching links to Q&A subpages from Polycade Helpcenter")
         question_link_pairs = self._fetch_helpcenter_subpage_links()
 
         print(
-            f"  |--> Parsing all Q&A subpages to which links were found ({len(question_link_pairs)} total). This is gonna take a while."
+            f"  |> Parsing all Q&A subpages to which links were found ({len(question_link_pairs)} total). This is gonna take a while"
         )
         question_answer_pairs = self._parse_qna_subpages(
             question_link_pairs=question_link_pairs
         )  # this takes a loooong time
 
-        print(f"  |--> Writing {len(question_link_pairs)} Q&As to Google Sheets")
+        print(f"  |> Sending {len(question_link_pairs)} Q&As to Google Sheets")
         self._write_qnas_to_sheets(question_answer_pairs=question_answer_pairs)
 
-        print("  |--> Sheets have been updated!")
+        print("  |> Google Sheets has been updated!")
         return
 
     def download_qnas_from_sheets(self) -> None:
@@ -284,7 +284,9 @@ class PolycadeChatbaseHelper:
             assert len(all_qaqaqa) % 2 == 0
             print(f"found {round(num_qnas_found)} Q&As")
 
-        print(f"  |--> Concluded with {round(len(all_qaqaqa) / 2)} questions total")
+        print(
+            f"  |--> A total of {round(len(all_qaqaqa) / 2)} questions were found across all sheets"
+        )
 
         is_containerized = os.environ.get(
             key="AM_I_IN_A_DOCKER_CONTAINER", default=False
